@@ -12,7 +12,7 @@ from astropy import units as u
 from skyfield.api import load
 from skyfield.planetarylib import PlanetaryConstants
 import matplotlib.pyplot as plt
-import matplotlib as mpl; mpl.use('Qt5Agg')
+import matplotlib as mpl
 from poliastro.bodies import Sun, Moon, Earth
 from poliastro.constants import GM_sun, GM_earth, GM_moon
 from skyfield.api import load
