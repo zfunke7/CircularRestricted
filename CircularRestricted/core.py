@@ -487,6 +487,51 @@ class CR3BP:
         self.xL = {'L%0.1i'%i: lagrange_pts(self.mu, i)[0] for i in range(1, 6)}
         self.yL = {'L%0.1i'%i: lagrange_pts(self.mu, i)[1] for i in range(1, 6)}
 
+    def summary(self):
+        """ Plots a sketch of the CR3BP with lagrange points.
+            Also prints some of the class attributes. """
+
+        x_m1 = -self.mu
+        x_m2 = 1-self.mu
+        # X1 = np.linspace(-x_m1, x_m1, 10000)
+        X2 = np.linspace(-x_m2, x_m2, 10000)
+        # Y1 = np.sqrt(x_m1**2 - X1**2)
+        Y2 = np.sqrt(x_m2**2 - X2**2)
+
+        fig, ax = plt.subplots()
+        # ax.plot(X1, Y1, '--k')
+        # ax.plot(X1, -Y1, '--k')
+        ax.plot(X2, Y2, '--k')
+        ax.plot(X2, -Y2, '--k')
+        ax.plot([-1.2*x_m2, 1.2*x_m2], [0, 0], 'k')
+        ax.plot([0,0], [-1.2 * x_m2, 1.2 * x_m2], 'k')
+        ax.scatter(x_m2, 0, fc='k', s=50)
+        ax.scatter(x_m1, 0, fc='k', s=150)
+        ax.plot(self.xL['L1'], 0, 'kx')
+        ax.text(self.xL['L1'], 0.05, 'L1')
+        ax.plot(self.xL['L2'], 0, 'kx')
+        ax.text(self.xL['L2'], 0.05, 'L2')
+        ax.plot(self.xL['L3'], 0, 'kx')
+        ax.text(self.xL['L3'], 0.05, 'L3')
+        ax.plot(self.xL['L4'], self.yL['L4'], 'kx')
+        ax.text(self.xL['L4'] + 0.05, self.yL['L4'] + 0.05, 'L4')
+        ax.plot(self.xL['L5'], self.yL['L5'], 'kx')
+        ax.text(self.xL['L5'] + 0.05, self.yL['L5'] - 0.05, 'L5')
+
+        ax.scatter(0, 0, fc='w', ec='k')
+        ax.set(xlim=[-1.2*x_m2, 1.2*x_m2], ylim=[-1.2*x_m2, 1.2*x_m2])
+        ax.set_aspect('equal');
+
+        print('CR3BP constant (μ): ', self.mu)
+        print('  -  Note: μ is defined as m2 / (m1 + m2)')
+        print('Primary body mass (m1): %0.6e kg' % self.m1.value)
+        print('Secondary body mass (m2): %0.6e kg' % self.m2.value)
+        print('Primary-Secondary distance: ', self.lc)
+        print('L1 position (non-dimensional): %0.6f' % self.xL['L1'])
+        print('L2 position (non-dimensional): %0.6f' % self.xL['L2'])
+
+        return fig, ax
+
     def convert(self, X, to='nondim', state_vec=False):
         """
          x : float - quantity to convert between dimensional / nondimensional
@@ -1050,6 +1095,10 @@ class Propagator:
                                   rtol=self.rtol, atol=self.atol)
             T = t_eval
             X = np.array([usol[:, i] for i in range(6)])
+        else:
+            pass
+
+
 
         return T, X
 
