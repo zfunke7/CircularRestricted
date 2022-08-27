@@ -178,8 +178,7 @@ def cr3bp(t, X, dX, p):
         p[0] : mu"""
     m = nb.carray(p, (1,))
     x, y, z, dx, dy, dz = nb.carray(X, (6,))
-    r1 = ((x + m) ** 2 + y ** 2 + z ** 2) ** 0.5
-    r2 = ((x - 1 + m) ** 2 + y ** 2 + z ** 2) ** 0.5
+    r1, r2, U, J = radii_U_J(m, [x,y,z,dx,dy,dz])
     dX[0] = dx
     dX[1] = dy
     dX[2] = dz
@@ -487,40 +486,9 @@ class CR3BP:
         self.xL = {'L%0.1i'%i: lagrange_pts(self.mu, i)[0] for i in range(1, 6)}
         self.yL = {'L%0.1i'%i: lagrange_pts(self.mu, i)[1] for i in range(1, 6)}
 
-    def summary(self):
+    def summary(self, plot=True):
         """ Plots a sketch of the CR3BP with lagrange points.
             Also prints some of the class attributes. """
-
-        x_m1 = -self.mu
-        x_m2 = 1-self.mu
-        # X1 = np.linspace(-x_m1, x_m1, 10000)
-        X2 = np.linspace(-x_m2, x_m2, 10000)
-        # Y1 = np.sqrt(x_m1**2 - X1**2)
-        Y2 = np.sqrt(x_m2**2 - X2**2)
-
-        fig, ax = plt.subplots()
-        # ax.plot(X1, Y1, '--k')
-        # ax.plot(X1, -Y1, '--k')
-        ax.plot(X2, Y2, '--k')
-        ax.plot(X2, -Y2, '--k')
-        ax.plot([-1.2*x_m2, 1.2*x_m2], [0, 0], 'k')
-        ax.plot([0,0], [-1.2 * x_m2, 1.2 * x_m2], 'k')
-        ax.scatter(x_m2, 0, fc='k', s=50)
-        ax.scatter(x_m1, 0, fc='k', s=150)
-        ax.plot(self.xL['L1'], 0, 'kx')
-        ax.text(self.xL['L1'], 0.05, 'L1')
-        ax.plot(self.xL['L2'], 0, 'kx')
-        ax.text(self.xL['L2'], 0.05, 'L2')
-        ax.plot(self.xL['L3'], 0, 'kx')
-        ax.text(self.xL['L3'], 0.05, 'L3')
-        ax.plot(self.xL['L4'], self.yL['L4'], 'kx')
-        ax.text(self.xL['L4'] + 0.05, self.yL['L4'] + 0.05, 'L4')
-        ax.plot(self.xL['L5'], self.yL['L5'], 'kx')
-        ax.text(self.xL['L5'] + 0.05, self.yL['L5'] - 0.05, 'L5')
-
-        ax.scatter(0, 0, fc='w', ec='k')
-        ax.set(xlim=[-1.2*x_m2, 1.2*x_m2], ylim=[-1.2*x_m2, 1.2*x_m2])
-        ax.set_aspect('equal');
 
         print('CR3BP constant (μ): ', self.mu)
         print('  -  Note: μ is defined as m2 / (m1 + m2)')
@@ -530,7 +498,35 @@ class CR3BP:
         print('L1 position (non-dimensional): %0.6f' % self.xL['L1'])
         print('L2 position (non-dimensional): %0.6f' % self.xL['L2'])
 
-        return fig, ax
+        if plot:
+            x_m1 = -self.mu
+            x_m2 = 1-self.mu
+            X2 = np.linspace(-x_m2, x_m2, 10000)
+            Y2 = np.sqrt(x_m2**2 - X2**2)
+            fig, ax = plt.subplots()
+            ax.plot(X2, Y2, '--k')
+            ax.plot(X2, -Y2, '--k')
+            ax.plot([-1.2*x_m2, 1.2*x_m2], [0, 0], 'k')
+            ax.plot([0,0], [-1.2 * x_m2, 1.2 * x_m2], 'k')
+            ax.scatter(x_m2, 0, fc='k', s=50)
+            ax.scatter(x_m1, 0, fc='k', s=150)
+            ax.plot(self.xL['L1'], 0, 'kx')
+            ax.text(self.xL['L1'], 0.05, 'L1')
+            ax.plot(self.xL['L2'], 0, 'kx')
+            ax.text(self.xL['L2'], 0.05, 'L2')
+            ax.plot(self.xL['L3'], 0, 'kx')
+            ax.text(self.xL['L3'], 0.05, 'L3')
+            ax.plot(self.xL['L4'], self.yL['L4'], 'kx')
+            ax.text(self.xL['L4'] + 0.05, self.yL['L4'] + 0.05, 'L4')
+            ax.plot(self.xL['L5'], self.yL['L5'], 'kx')
+            ax.text(self.xL['L5'] + 0.05, self.yL['L5'] - 0.05, 'L5')
+            ax.scatter(0, 0, fc='w', ec='k')
+            ax.set(xlim=[-1.2*x_m2, 1.2*x_m2], ylim=[-1.2*x_m2, 1.2*x_m2])
+            ax.set_aspect('equal');
+            return fig, ax
+
+        else:
+            return
 
     def convert(self, X, to='nondim', state_vec=False):
         """
@@ -989,7 +985,7 @@ class CR3BP:
 
 
 class Spacecraft:
-    def __init__(self, frame, X0=np.array([1,0,0,0,0,0]), ar=0.0, at=0.0,
+    def __init__(self, frame, X0=np.array([0.5,0,0,0,0,0]), ar=0.0, at=0.0,
                  thrust_prof=None):
         self.frame = frame
         self.set_initial_state(X0)
@@ -999,6 +995,14 @@ class Spacecraft:
         self.ar = ar
         self.at = at
         self.xL_aug = augmented_L1(frame.mu, ar)
+
+    def summary(self):
+        print('Initial State: ', self.X0)
+        print('Thrust Profile: ', self.thrust_prof)
+        print('Radial SRP Acceleration: ', self.ar)
+        print('Transverse SRP acceleration: ', self.at)
+        print('\nParent Scenario summary:\n---------------------')
+        self.frame.summary(plot=False)
 
     def set_initial_state(self, X0_new):
         if isinstance(X0_new, u.Quantity):
@@ -1023,18 +1027,39 @@ class Spacecraft:
                 self.controller_params = [p for p in args]
 
     def propagate(self, propagator, t_max=2*np.pi, n=10**6):
-        self.T, self.X = propagator.integrate(t_max, n)
-        return self.T, self.X
+        self.T, self.X, self.J = propagator.integrate(t_max, n)
+        return self.T, self.X, self.J
 
 
 class Propagator:
-    def __init__(self, frame, spacecraft, method, rtol=1e-3, atol=1e-6):
-        self.frame = frame
+    def __init__(self, spacecraft, method='numbalsoda', rtol=1e-3, atol=1e-6):
         self.spacecraft = spacecraft
+        self.frame = spacecraft.frame
         self.method = method
+        self.available_methods = ['numbalsoda', 'LSODA', 'RK45', 'RK23',
+                                  'DOP853', 'Radau', 'BDF']
         self.X0 = spacecraft.X0
         self.set_tolerance(rtol, atol)
         self.output = None
+
+    def summary(self):
+        print('Integration method: ', self.method)
+        print('Relative tolerance: ', self.rtol)
+        print('Absolute tolerance: ', self.atol)
+        print('\nParent Spacecraft Summary:\n-------------------- ')
+        self.spacecraft.summary()
+
+    def get_methods(self):
+        for method in self.available_methods:
+            print(method)
+
+        print('\nExplicit Runge-Kutta methods (RK23, RK45, DOP853) should be ',
+              'used for non-stiff problems and implicit methods (Radau, BDF) ',
+              'for stiff problems. Among Runge-Kutta methods, DOP853 is ',
+              'recommended for solving with high precision (low values of ',
+              'rtol and atol). LSODA can be a good universal choice, but it ',
+              'might be somewhat less convenient to work with as it wraps old ',
+              'Fortran code.')
 
     def set_tolerance(self, rtol=1e-3, atol=1e-6):
         self.rtol = rtol
@@ -1093,14 +1118,18 @@ class Propagator:
                 cfunc_ptr = cr3bp_ptr
             usol, success = lsoda(cfunc_ptr, self.X0, t_eval, data=mu_thr,
                                   rtol=self.rtol, atol=self.atol)
-            T = t_eval
             X = np.array([usol[:, i] for i in range(6)])
         else:
+            sol = solve_ivp(motion, interval, initial_values,
+                            args=(self.spacecraft.thrust_prof,),
+                            method=self.method, t_eval=t_eval, dense_output=True,
+                            rtol=self.rtol, atol=self.atol)
+            X = sol.y
             pass
 
-
-
-        return T, X
+        T = t_eval
+        r1, r2, U, J = radii_U_J(self.frame.mu, X)
+        return T, X, J
 
 
 
