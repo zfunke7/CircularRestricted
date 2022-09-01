@@ -120,19 +120,6 @@ def smooth_step_single(x, y0, y1, x0, xf, s=10.0):
     return y1*(yL-yR) + y0
 
 
-# def deadband_cost(x, x_db, s):
-#     """ Returns a function that increases at a rate of s as
-#         the input value x departs from 0, but only after x exceeds
-#         the deadband value of x_db. Symmetric about x=0."""
-#     if not isinstance(x,np.ndarray):
-#         x = np.array([x])
-#     y = np.zeros_like(x)
-#     for i in range(len(x)):
-#         y[i] = s*abs(x[i]) - x_db*s
-#         y[i] += -y[i]*(np.heaviside(x[i]+x_db,1)-np.heaviside(x[i]-x_db,1))
-#     return y
-
-
 @njit(fastmath=True)
 def deadband_cost(x, x_db, s, sym=2):
     """ This is a two-sided continuous approximation of the ramp function with
@@ -154,3 +141,19 @@ def deadband_cost(x, x_db, s, sym=2):
         (2*np.mod(sym,2)-1)*s * (x + x_db) * \
         (np.zeros_like(x) + (-np.sign(x + x_db) + 1) / 2 * np.exp(-1 / (1e20 * (-x + x_db))))
     return y
+
+
+def read_jpl_ephem(filename):
+    with open(filename) as f:
+        lines = f.readlines()
+    SOE_ind = lines.index('$$SOE\n')
+    SOE_ind = lines.index('$$EOE\n')
+    Eph_lines = lines[SOE_ind+1:EOE_ind]
+    eph = {}
+    for e_line in Eph_lines:
+        e = e_line.split(',')
+        t = float(e[0])
+        X = [float(x) for x in e[2:8]]
+        eph[t] = X
+    return eph
+
