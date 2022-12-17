@@ -1,0 +1,8 @@
+.core:
+- CR3BP.inertial_to_synodic
+- CR3BP.synodic_to_inertial
+
+.utils:
+- read_jpl_osculating
+- COE_to_LL
+- StateVec_to_LL
